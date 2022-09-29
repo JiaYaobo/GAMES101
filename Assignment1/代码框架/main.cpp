@@ -1,10 +1,11 @@
 #include "Triangle.hpp"
 #include "rasterizer.hpp"
-#include <eigen3/Eigen/Eigen>
+#include <Eigen/Eigen>
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
 constexpr double MY_PI = 3.1415926;
+
 
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 {
@@ -23,9 +24,12 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle)
 {
     Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
 
-    // TODO: Implement this function
-    // Create the model matrix for rotating the triangle around the Z axis.
-    // Then return it.
+    float rad = rotation_angle * MY_PI / 180;
+
+    model << cos(rad), -sin(rad), 0, 0,
+                sin(rad), cos(rad), 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1;
 
     return model;
 }
@@ -35,11 +39,38 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
 {
     // Students will implement this function
 
+    zNear = -abs(zNear);
+    zFar = -abs(zFar);
+
     Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
 
-    // TODO: Implement this function
-    // Create the projection matrix for the given parameters.
-    // Then return it.
+    float t = tan(eye_fov * MY_PI / (2 * 180 ) ) * zNear;
+
+    auto r = aspect_ratio * t;
+
+    Eigen::Matrix4f Persp2Ortho = Eigen::Matrix4f::Identity();
+
+    Persp2Ortho << zNear, 0, 0, 0,
+                    0, zNear, 0, 0,
+                    0, 0, (zNear + zFar), -zNear * zFar,
+                    0 ,0, 1, 0;
+    Eigen::Matrix4f Ortho = Eigen::Matrix4f ::Identity();
+
+    Eigen::Matrix4f Scale = Eigen::Matrix4f::Identity();
+
+    Scale << 1.0/r, 0, 0, 0,
+             0, 1.0/t, 0, 0,
+             0, 0, 2/(zNear - zFar), 0,
+             0, 0, 0, 1;
+    Eigen::Matrix4f  Translation = Eigen::Matrix4f::Identity();
+
+    Translation << 1, 0, 0, 0,
+                 0, 1, 0, 0,
+                 0, 0, 1, -(zNear+zFar)/2,
+                 0, 0, 0, 1;
+    Ortho = Scale * Translation;
+
+    projection = Ortho * Persp2Ortho;
 
     return projection;
 }
