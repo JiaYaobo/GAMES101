@@ -34,6 +34,38 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle)
     return model;
 }
 
+Eigen::Matrix4f get_model_matrix(Eigen::Vector3f n, float rotation_angle){
+    Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
+    Eigen::Matrix4f K = Eigen::Matrix4f::Identity();
+    K << 0, -n[2], n[1], 0,
+        n[2], 0, -n[0], 0,
+        -n[1], n[0], 0, 0,
+        0, 0, 0, 1;
+
+    float rad = rotation_angle * MY_PI / 180;
+
+    Eigen::Matrix4f R = Eigen::Matrix4f ::Identity() + sin(rad) * K + (1 - cos(rad)) * K * K;
+
+    return R * model;
+}
+
+Eigen::Matrix4f get_rotation(Vector3f axis,float angle)
+{
+    float angle_x,angle_y,angle_z;
+    float length = sqrt(axis.x() * axis.x() + axis.y()*axis.y()+axis.z()*axis.z());
+    angle_x = std::acos(axis.x()/length);
+    angle_y = std::acos(axis.y()/length);
+    angle_z = std::acos(axis.z()/length);
+    Eigen::Matrix4f m1,m2,m3  = Eigen::Matrix4f::Identity();
+    m1<<1,0,0,0,0,cos(angle_x),-sin(angle_x),0,0,sin(angle_x),cos(angle_x),0,0,0,0,1;
+    m2<<cos(angle_y),0,sin(angle_y),0,0,1,0,0,-sin(angle_y),0,cos(angle_y),0,0,0,0,1;
+    m3<<cos(angle_z),-sin(angle_z),0,0,sin(angle_z),cos(angle_z),0,0,0,0,1,0,0,0,0,1;
+
+    Eigen::Matrix4f rotation = Eigen::Matrix4f::Identity();
+    rotation =m3*m2*m1*Eigen::Matrix4f::Identity();
+    return rotation;
+}
+
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
                                       float zNear, float zFar)
 {
@@ -44,7 +76,7 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
 
     Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
 
-    float t = tan(eye_fov * MY_PI / (2 * 180 ) ) * zNear;
+    float t = tan(eye_fov * MY_PI / (2 * 180 ) ) * abs(zNear);
 
     auto r = aspect_ratio * t;
 
@@ -95,6 +127,8 @@ int main(int argc, const char** argv)
 
     Eigen::Vector3f eye_pos = {0, 0, 5};
 
+    Eigen::Vector3f rotation_axis = {1.0/sqrt(3) ,1.0/sqrt(3), 1.0/sqrt(3)};
+
     std::vector<Eigen::Vector3f> pos{{2, 0, -2}, {0, 2, -2}, {-2, 0, -2}};
 
     std::vector<Eigen::Vector3i> ind{{0, 1, 2}};
@@ -108,7 +142,7 @@ int main(int argc, const char** argv)
     if (command_line) {
         r.clear(rst::Buffers::Color | rst::Buffers::Depth);
 
-        r.set_model(get_model_matrix(angle));
+        r.set_model(get_model_matrix(rotation_axis, angle));
         r.set_view(get_view_matrix(eye_pos));
         r.set_projection(get_projection_matrix(45, 1, 0.1, 50));
 
